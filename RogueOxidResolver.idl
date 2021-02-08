@@ -1,0 +1,386 @@
+import "oaidl.idl";
+import "ocidl.idl";
+
+//source --> https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-dcom/49aef5a4-f0ad-4478-abb5-cb9446dc13c6
+
+typedef GUID CLSID;
+typedef GUID IID;
+typedef unsigned hyper ID;
+typedef unsigned hyper OXID;
+
+typedef unsigned hyper OID;
+typedef unsigned hyper SETID;
+typedef GUID    IPID;
+typedef GUID    CID;
+
+#define REFGUID const GUID *
+#define REFIID const IID *
+
+typedef REFGUID REFIPID;
+
+const unsigned long MAX_REQUESTED_INTERFACES = 0x8000;
+const unsigned long MAX_REQUESTED_PROTSEQS = 0x8000;
+
+typedef struct tagCOMVERSION
+{
+	unsigned short MajorVersion;
+	unsigned short MinorVersion;
+} COMVERSION;
+
+typedef struct tagORPC_EXTENT
+{
+	GUID                    id;
+	unsigned long           size;
+	[size_is((size + 7) & ~7)] byte data[];
+} ORPC_EXTENT;
+
+typedef struct tagORPC_EXTENT_ARRAY
+{
+	unsigned long size;
+	unsigned long reserved;
+	[size_is((size + 1) & ~1, ), unique] ORPC_EXTENT** extent;
+} ORPC_EXTENT_ARRAY;
+
+typedef struct tagORPCTHIS
+{
+	COMVERSION      version;
+	unsigned long   flags;
+	unsigned long   reserved1;
+	CID             cid;
+	[unique] ORPC_EXTENT_ARRAY* extensions;
+} ORPCTHIS;
+
+typedef struct tagORPCTHAT
+{
+	unsigned long  flags;
+	[unique] ORPC_EXTENT_ARRAY* extensions;
+} ORPCTHAT;
+
+typedef struct tagDUALSTRINGARRAY
+{
+	unsigned short wNumEntries;
+	unsigned short wSecurityOffset;
+	[size_is(wNumEntries)] unsigned short aStringArray[];
+} DUALSTRINGARRAY;
+
+enum tagCPFLAGS
+{
+	CPFLAG_PROPAGATE = 0x1,
+	CPFLAG_EXPOSE = 0x2,
+	CPFLAG_ENVOY = 0x4,
+};
+
+typedef struct tagMInterfacePointer
+{
+	unsigned long           ulCntData;
+	[size_is(ulCntData)] byte abData[];
+} MInterfacePointer;
+
+typedef [unique] MInterfacePointer* PMInterfacePointer;
+
+typedef struct tagErrorObjectData
+{
+	DWORD  dwVersion;
+	DWORD  dwHelpContext;
+	IID    iid;
+	[unique, string] wchar_t* pszSource;
+	[unique, string] wchar_t* pszDescription;
+	[unique, string] wchar_t* pszHelpFile;
+} ErrorObjectData;
+
+
+[
+	uuid(99fcfec4-5260-101b-bbcb-00aa0021347a),
+	pointer_default(unique)
+]
+
+interface IObjectExporter
+{
+	[idempotent] error_status_t ResolveOxid
+	(
+		[in]       handle_t        hRpc,
+		[in]       OXID* pOxid,
+		[in]       unsigned short  cRequestedProtseqs,
+		[in, ref, size_is(cRequestedProtseqs)]
+	unsigned short  arRequestedProtseqs[],
+		[out, ref] DUALSTRINGARRAY** ppdsaOxidBindings,
+		[out, ref] IPID* pipidRemUnknown,
+		[out, ref] DWORD* pAuthnHint
+		);
+
+	[idempotent] error_status_t SimplePing
+	(
+		[in]  handle_t  hRpc,
+		[in]  SETID* pSetId
+	);
+
+	[idempotent] error_status_t ComplexPing
+	(
+		[in]       handle_t        hRpc,
+		[in, out]  SETID* pSetId,
+		[in]       unsigned short  SequenceNum,
+		[in]       unsigned short  cAddToSet,
+		[in]       unsigned short  cDelFromSet,
+		[in, unique, size_is(cAddToSet)]   OID AddToSet[],
+		[in, unique, size_is(cDelFromSet)] OID DelFromSet[],
+		[out]      unsigned short* pPingBackoffFactor
+	);
+
+	[idempotent] error_status_t ServerAlive
+	(
+		[in]       handle_t        hRpc
+	);
+
+
+	[idempotent] error_status_t ResolveOxid2
+	(
+		[in]       handle_t        hRpc,
+		[in]       OXID* pOxid,
+		[in]       unsigned short  cRequestedProtseqs,
+		[in, ref, size_is(cRequestedProtseqs)]
+	unsigned short  arRequestedProtseqs[],
+		[out, ref] DUALSTRINGARRAY** ppdsaOxidBindings,
+		[out, ref] IPID* pipidRemUnknown,
+		[out, ref] DWORD* pAuthnHint,
+		[out, ref] COMVERSION* pComVersion
+		);
+
+	[idempotent] error_status_t ServerAlive2
+	(
+		[in]       handle_t        hRpc,
+		[out, ref] COMVERSION* pComVersion,
+		[out, ref] DUALSTRINGARRAY** ppdsaOrBindings,
+		[out, ref] DWORD* pReserved
+	);
+}
+
+typedef struct tagSTDOBJREF
+{
+	unsigned long  flags;
+	unsigned long  cPublicRefs;
+	OXID           oxid;
+	OID            oid;
+	IPID           ipid;
+} STDOBJREF;
+
+typedef struct tagREMQIRESULT
+{
+	HRESULT         hResult;
+	STDOBJREF       std;
+} REMQIRESULT;
+
+typedef struct tagREMINTERFACEREF
+{
+	IPID            ipid;
+	unsigned long   cPublicRefs;
+	unsigned long   cPrivateRefs;
+} REMINTERFACEREF;
+
+typedef [disable_consistency_check] REMQIRESULT* PREMQIRESULT;
+typedef [disable_consistency_check] MInterfacePointer*
+PMInterfacePointerInternal;
+
+/*Already defined
+[
+	object,
+	uuid(00000000-0000-0000-C000-000000000046),
+	pointer_default(unique)
+]
+interface IUnknown
+{
+	HRESULT Opnum0NotUsedOnWire(void);
+	HRESULT Opnum1NotUsedOnWire(void);
+	HRESULT Opnum2NotUsedOnWire(void);
+};*/
+
+[
+	object,
+	uuid(00000131-0000-0000-C000-000000000046)
+]
+interface IRemUnknown : IUnknown
+{
+	HRESULT RemQueryInterface
+	(
+		[in] REFIPID                         ripid,
+		[in] unsigned long                   cRefs,
+		[in] unsigned short                  cIids,
+		[in, size_is(cIids)] IID* iids,
+		[out, size_is(, cIids)] PREMQIRESULT* ppQIResults
+	);
+
+	HRESULT RemAddRef
+	(
+		[in] unsigned short cInterfaceRefs,
+		[in, size_is(cInterfaceRefs)] REMINTERFACEREF
+		InterfaceRefs[],
+		[out, size_is(cInterfaceRefs)] HRESULT* pResults
+	);
+
+	HRESULT RemRelease
+	(
+		[in] unsigned short cInterfaceRefs,
+		[in, size_is(cInterfaceRefs)] REMINTERFACEREF
+		InterfaceRefs[]
+	);
+}
+
+[
+	object,
+	uuid(00000143-0000-0000-C000-000000000046)
+]
+interface IRemUnknown2 : IRemUnknown
+{
+	HRESULT RemQueryInterface2
+	(
+		[in] REFIPID                                      ripid,
+		[in] unsigned short                               cIids,
+		[in, size_is(cIids)] IID* iids,
+		[out, size_is(cIids)] HRESULT* phr,
+		[out, size_is(cIids)] PMInterfacePointerInternal* ppMIF
+	);
+}
+
+const unsigned long MIN_ACTPROP_LIMIT = 1;
+const unsigned long MAX_ACTPROP_LIMIT = 10;
+
+/*Already defined
+typedef struct _COSERVERINFO
+{
+	DWORD              dwReserved1;
+	[string] wchar_t* pwszName;
+	DWORD* pdwReserved;
+	DWORD              dwReserved2;
+} COSERVERINFO;*/
+
+typedef struct _customREMOTE_REQUEST_SCM_INFO
+{
+	DWORD                           ClientImpLevel;
+	[range(0, MAX_REQUESTED_PROTSEQS)] unsigned short
+		cRequestedProtseqs;
+	[size_is(cRequestedProtseqs)]
+	unsigned short* pRequestedProtseqs;
+} customREMOTE_REQUEST_SCM_INFO;
+
+typedef struct _customREMOTE_REPLY_SCM_INFO
+{
+	OXID                            Oxid;
+	DUALSTRINGARRAY* pdsaOxidBindings;
+	IPID                            ipidRemUnknown;
+	DWORD                           authnHint;
+	COMVERSION                      serverVersion;
+} customREMOTE_REPLY_SCM_INFO;
+
+typedef struct tagInstantiationInfoData
+{
+	CLSID classId;
+	DWORD classCtx;
+	DWORD actvflags;
+	long  fIsSurrogate;
+	[range(1, MAX_REQUESTED_INTERFACES)] DWORD cIID;
+	DWORD instFlag;
+	[size_is(cIID)] IID* pIID;
+	DWORD thisSize;
+	COMVERSION clientCOMVersion;
+} InstantiationInfoData;
+
+typedef struct tagLocationInfoData
+{
+	[string] wchar_t* machineName;
+	DWORD processId;
+	DWORD apartmentId;
+	DWORD contextId;
+} LocationInfoData;
+
+typedef struct tagActivationContextInfoData
+{
+	long  clientOK;
+	long  bReserved1;
+	DWORD dwReserved1;
+	DWORD dwReserved2;
+	MInterfacePointer* pIFDClientCtx;
+	MInterfacePointer* pIFDPrototypeCtx;
+} ActivationContextInfoData;
+
+typedef struct tagCustomHeader
+{
+	DWORD totalSize;
+	DWORD headerSize;
+	DWORD dwReserved;
+	DWORD destCtx;
+	[range(MIN_ACTPROP_LIMIT, MAX_ACTPROP_LIMIT)] DWORD cIfs;
+	CLSID classInfoClsid;
+	[size_is(cIfs)] CLSID* pclsid;
+	[size_is(cIfs)] DWORD* pSizes;
+	DWORD* pdwReserved;
+} CustomHeader;
+
+typedef struct tagPropsOutInfo
+{
+	[range(1, MAX_REQUESTED_INTERFACES)] DWORD cIfs;
+	[size_is(cIfs)] IID* piid;
+	[size_is(cIfs)] HRESULT* phresults;
+	[size_is(cIfs)] MInterfacePointer** ppIntfData;
+} PropsOutInfo;
+
+typedef struct tagSecurityInfoData
+{
+	DWORD           dwAuthnFlags;
+	COSERVERINFO* pServerInfo;
+	DWORD* pdwReserved;
+} SecurityInfoData;
+
+typedef struct tagScmRequestInfoData
+{
+	DWORD* pdwReserved;
+	customREMOTE_REQUEST_SCM_INFO* remoteRequest;
+} ScmRequestInfoData;
+
+typedef struct tagScmReplyInfoData
+{
+	DWORD* pdwReserved;
+	customREMOTE_REPLY_SCM_INFO* remoteReply;
+} ScmReplyInfoData;
+
+typedef struct tagInstanceInfoData
+{
+	[string] wchar_t* fileName;
+	DWORD   mode;
+	MInterfacePointer* ifdROT;
+	MInterfacePointer* ifdStg;
+} InstanceInfoData;
+
+typedef enum
+{
+	SPD_FLAG_USE_CONSOLE_SESSION = 0x00000001,
+	SPD_FLAG_USE_DEFAULT_AUTHN_LVL = 0x00000002,
+} SPD_FLAGS;
+
+typedef struct tagSpecialPropertiesData
+{
+	unsigned long dwSessionId;
+	long  fRemoteThisSessionId;
+	long  fClientImpersonating;
+	long  fPartitionIDPresent;
+	DWORD dwDefaultAuthnLvl;
+	GUID  guidPartition;
+	DWORD dwPRTFlags;
+	DWORD dwOrigClsctx;
+	DWORD dwFlags;
+	DWORD Reserved1;
+	unsigned __int64 Reserved2;
+	DWORD Reserved3[5];
+} SpecialPropertiesData;
+
+typedef struct tagSpecialPropertiesData_Alternate
+{
+	unsigned long dwSessionId;
+	long  fRemoteThisSessionId;
+	long  fClientImpersonating;
+	long  fPartitionIDPresent;
+	DWORD dwDefaultAuthnLvl;
+	GUID  guidPartition;
+	DWORD dwPRTFlags;
+	DWORD dwOrigClsctx;
+	DWORD dwFlags;
+	DWORD Reserved3[8];
+} SpecialPropertiesData_Alternate;
