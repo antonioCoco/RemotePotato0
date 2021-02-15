@@ -148,7 +148,7 @@ error_status_t ResolveOxid2
 	wcstombs_s(&wcstombsOut, port, 9, g_rpc2httpCrossProtocolRelayPort, 9);
 
 	printf("[*] ResolveOxid2 RPC call\n");
-	*pAuthnHint = 0x2;
+	*pAuthnHint = RPC_C_AUTHN_LEVEL_CONNECT;
 	CLSIDFromString(OLESTR("{11111111-2222-3333-4444-555555555555}"), (CLSID*)pipidRemUnknown);
 	sprintf_s(endpoint, MAX_PATH, "127.0.0.1[%s]", port);
 	int endpoint_len = (int)strlen(endpoint) + 1;
