@@ -122,12 +122,6 @@ void DoHTTPCrossProtocolRelay(wchar_t* remoteIpRelay, wchar_t* remotePortRelay, 
 				printf("[!] Relaying failed :(\n");
 			break;
 		}
-		// if the rpc packet does not contain any auth information we just relay the packets without touching anything
-		else {
-			iResult = send(RPCSocketReflect, recvbuf, iResult, 0);
-			iResult = recv(RPCSocketReflect, recvbuf, recvbuflen, 0);
-			iResult = send(RPCSocketListen, recvbuf, iResult, 0);
-		}
 	} while (iResult > 0);
 	closesocket(RPCSocketListen);
 	closesocket(RPCSocketReflect);
