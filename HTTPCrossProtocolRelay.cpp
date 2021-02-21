@@ -64,6 +64,7 @@ void DoHTTPCrossProtocolRelay(wchar_t* remoteIpRelay, wchar_t* remotePortRelay, 
 				printf("[!] Couldn't forge the http packet with the type 1 auth and send it to the http server.\n");
 				break;
 			}
+			Sleep(1000);
 			// receive the http response from the http server including type2 message
 			iResult = recv(HTTPSocket, recvbuf, recvbuflen, 0);
 			if (iResult == SOCKET_ERROR) {
