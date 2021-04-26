@@ -9,6 +9,8 @@ It abuses the DCOM activation service and trigger an NTLM authentication of the 
 It is required you have a shell in session 0 (e.g. WinRm shell or SSH shell) and that a privileged user is logged on in the session 1 (e.g. a Domain Admin user).
 Once the NTLM type1 is triggered we setup a cross protocol relay server that receive the privileged type1 message and relay it to a third resource by unpacking the RPC protocol and packing the authentication over HTTP. On the receiving end you can setup a further relay node (eg. ntlmrelayx) or relay directly to a privileged resource.
 
+Full details at --> https://labs.sentinelone.com/relaying-potatoes-dce-rpc-ntlm-relay-eop
+
 ## Example
 
 Attacker machine (10.0.0.11):
@@ -41,7 +43,7 @@ rule SentinelOne_RemotePotato0_privesc {
     meta:
         author = "SentinelOne"
         description = "Detects RemotePotato0 binary"
-        reference = ""
+        reference = "https://labs.sentinelone.com/relaying-potatoes-dce-rpc-ntlm-relay-eop"
         
     strings:
         $import1 = "CoGetInstanceFromIStorage"
