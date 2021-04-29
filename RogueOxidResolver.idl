@@ -384,3 +384,36 @@ typedef struct tagSpecialPropertiesData_Alternate
 	DWORD dwFlags;
 	DWORD Reserved3[8];
 } SpecialPropertiesData_Alternate;
+
+[
+	object,
+	uuid(000001B8-0000-0000-c000-000000000046)
+]
+interface IStandardActivator : IUnknown
+{
+
+	HRESULT StandardGetInstanceFromIStorage1([in] COSERVERINFO* pServerInfo,
+		[in] REFCLSID pclsidOverride, [in] IUnknown* punkOuter, [in] CLSCTX dwClsCtx,
+		[in] IStorage* pstg, [in] int dwCount, [out, ref] MULTI_QI* pResults);
+	HRESULT StandardGetInstanceFromIStorage2([in] COSERVERINFO* pServerInfo,
+		[in] REFCLSID pclsidOverride, [in] IUnknown* punkOuter, [in] CLSCTX dwClsCtx,
+		[in] IStorage* pstg, [in] int dwCount, [out, ref] MULTI_QI* pResults);
+	HRESULT StandardGetInstanceFromIStorage3([in] COSERVERINFO* pServerInfo,
+		[in] REFCLSID pclsidOverride, [in] IUnknown* punkOuter, [in] CLSCTX dwClsCtx,
+		[in] IStorage* pstg, [in] int dwCount, [out, ref] MULTI_QI* pResults);
+	HRESULT StandardGetInstanceFromIStorage([in] COSERVERINFO* pServerInfo,
+		[in] REFCLSID pclsidOverride, [in] IUnknown* punkOuter, [in] CLSCTX dwClsCtx,
+		[in] IStorage* pstg, [in] int dwCount, [out, ref] MULTI_QI* pResults);
+};
+
+
+[
+	object,
+	uuid(000001B9-0000-0000-c000-000000000046)
+]
+
+interface ISpecialSystemPropertiesActivator : IUnknown
+{
+	HRESULT SetSessionId([in] int dwSessionId, [in]  int bUseConsole, [in] int fRemoteThisSessionId);
+
+}
