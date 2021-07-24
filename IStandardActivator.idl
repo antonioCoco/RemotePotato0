@@ -1,0 +1,68 @@
+import "oaidl.idl";
+import "ocidl.idl";
+
+[
+	object,
+	local,
+	uuid(000001b8-0000-0000-C000-000000000046),
+	pointer_default(unique)
+]
+interface IStandardActivator : IUnknown
+{
+	HRESULT StandardGetClassObject([in] REFCLSID rclsid,
+		[in] DWORD dwClsCtx,
+		[in] COSERVERINFO* pServerInfo,
+		[in] REFIID riid,
+		[out, iid_is(riid)] void** ppv);
+
+	HRESULT StandardCreateInstance([in] REFCLSID Clsid,
+		[in] IUnknown* punkOuter,
+		[in] DWORD dwClsCtx,
+		[in] COSERVERINFO* pServerInfo,
+		[in] DWORD dwCount,
+		[in, size_is(dwCount)] MULTI_QI* pResults);
+
+	HRESULT StandardGetInstanceFromFile(
+		[in] COSERVERINFO* pServerInfo,
+		[in] CLSID* pclsidOverride,
+		[in] IUnknown* punkOuter,
+		[in] DWORD        dwClsCtx,
+		[in] DWORD        grfMode,
+		[in] OLECHAR* pwszName,
+		[in] DWORD        dwCount,
+		[in, size_is(dwCount)] MULTI_QI* pResults);
+
+	HRESULT StandardGetInstanceFromIStorage(
+		[in] COSERVERINFO* pServerInfo,
+		[in] CLSID* pclsidOverride,
+		[in] IUnknown* punkOuter,
+		[in] DWORD           dwClsCtx,
+		[in] IStorage* pstg,
+		[in] DWORD           dwCount,
+		[in, size_is(dwCount)] MULTI_QI* pResults);
+
+	HRESULT Reset();
+}
+
+[
+	object,
+	local,
+	uuid(000001b9-0000-0000-C000-000000000046),
+	pointer_default(unique)
+]
+interface ISpecialSystemProperties : IUnknown
+{
+	HRESULT SetSessionId([in] ULONG dwSessionId, [in]BOOL bUseConsole, [in] BOOL fRemoteThisSessionId);
+	HRESULT GetSessionId([out] ULONG* pdwSessionId, [out]BOOL* pbUseConsole);
+	HRESULT GetSessionId2([out] ULONG* pdwSessionId, [out]BOOL* pbUseConsole, [out] BOOL* pfRemoteThisSessionId);
+	HRESULT SetClientImpersonating([in]BOOL fClientImpersonating);
+	HRESULT GetClientImpersonating([out]BOOL* pfClientImpersonating);
+	HRESULT SetPartitionId([in] REFGUID guidPartiton);
+	HRESULT GetPartitionId([out] GUID* pguidPartiton);
+	HRESULT SetProcessRequestType([in] DWORD dwPRT);
+	HRESULT GetProcessRequestType([out] DWORD* pdwPRT);
+	HRESULT SetOrigClsctx([in] DWORD dwClsctx);
+	HRESULT GetOrigClsctx([out] DWORD* dwClsctx);
+	HRESULT GetDefaultAuthenticationLevel([out] DWORD* pdwAuthnLevel);
+	HRESULT SetDefaultAuthenticationLevel([in] DWORD dwAuthnLevel);
+}
