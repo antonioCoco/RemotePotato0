@@ -12,8 +12,10 @@
     <ClInclude Include="RogueOxidResolver.h" />
     <ClInclude Include="RogueOxidResolver_h.h" />
     <ClInclude Include="HTTPCrossProtocolRelay.h" />
+    <ClInclude Include="IStandardActivator_h.h" />
   </ItemGroup>
   <ItemGroup>
     <Midl Include="RogueOxidResolver.idl" />
+    <Midl Include="IStandardActivator.idl" />
   </ItemGroup>
 </Project>

@@ -129,7 +129,7 @@
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -161,11 +161,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="HTTPCrossProtocolRelay.h" />
+    <ClInclude Include="IStandardActivator_h.h" />
     <ClInclude Include="IStorageTrigger.h" />
     <ClInclude Include="RogueOxidResolver.h" />
     <ClInclude Include="RogueOxidResolver_h.h" />
   </ItemGroup>
   <ItemGroup>
+    <Midl Include="IStandardActivator.idl" />
     <Midl Include="RogueOxidResolver.idl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
