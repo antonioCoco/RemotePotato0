@@ -5,8 +5,8 @@ RemotePotato0 is an exploit that allows you to escalate your privileges from a g
 
 Briefly:
 
-It abuses the DCOM activation service and trigger an NTLM authentication of the user currently logged on in the target machine.
-It is required you have a shell in session 0 (e.g. WinRm shell or SSH shell) and that a privileged user is logged on in the session 1 (e.g. a Domain Admin user).
+It abuses the DCOM activation service and trigger an NTLM authentication of any user currently logged on in the target machine.
+It is required that a privileged user is logged on the same machine (e.g. a Domain Admin user).
 Once the NTLM type1 is triggered we setup a cross protocol relay server that receive the privileged type1 message and relay it to a third resource by unpacking the RPC protocol and packing the authentication over HTTP. On the receiving end you can setup a further relay node (eg. ntlmrelayx) or relay directly to a privileged resource.
 
 Full details at --> https://labs.sentinelone.com/relaying-potatoes-dce-rpc-ntlm-relay-eop
