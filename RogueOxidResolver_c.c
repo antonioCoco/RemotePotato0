@@ -1193,7 +1193,7 @@ static const __midl_frag56_t __midl_frag56 =
 
 static const __midl_frag52_t __midl_frag52 =
 { 
-/* *CLSID */
+/* *IID */
     0x20,    /* FC64_RP */
     (NDR64_UINT8) 4 /* 0x4 */,
     (NDR64_UINT16) 0 /* 0x0 */,
@@ -1938,13 +1938,13 @@ static const __midl_frag20_t __midl_frag20 =
 
 static const __midl_frag16_t __midl_frag16 =
 { 
-/* CLSID */
+/* IID */
     { 
-    /* CLSID */
+    /* IID */
         0x30,    /* FC64_STRUCT */
         (NDR64_UINT8) 3 /* 0x3 */,
         { 
-        /* CLSID */
+        /* IID */
             0,
             0,
             0,
