@@ -6,6 +6,7 @@
     <ClCompile Include="RogueOxidResolver_s.c" />
     <ClCompile Include="HTTPCrossProtocolRelay.cpp" />
     <ClCompile Include="RogueOxidResolver.cpp" />
+    <ClCompile Include="RPCCaptureServer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IStorageTrigger.h" />
@@ -13,6 +14,7 @@
     <ClInclude Include="RogueOxidResolver_h.h" />
     <ClInclude Include="HTTPCrossProtocolRelay.h" />
     <ClInclude Include="IStandardActivator_h.h" />
+    <ClInclude Include="RPCCaptureServer.h" />
   </ItemGroup>
   <ItemGroup>
     <Midl Include="RogueOxidResolver.idl" />

