@@ -166,6 +166,7 @@ rule SentinelOne_RemotePotato0_privesc {
 
 * [Impacket](https://github.com/SecureAuthCorp/impacket)
 * [@tiraniddo](https://twitter.com/tiraniddo) - [Cross Session Activation](https://www.tiraniddo.dev/2021/04/standard-activating-yourself-to.html)
+* [@Responder](https://github.com/lgandx/Responder)
 
 ## References
 - https://labs.sentinelone.com/relaying-potatoes-dce-rpc-ntlm-relay-eop/
