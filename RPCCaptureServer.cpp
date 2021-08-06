@@ -18,10 +18,10 @@
 
 #define DEFAULT_BUFLEN 8192
 
-#define NTLMv2_SERVER_CHALLENGE_LENGTH 8
-#define NTLMv2_NTPROOFSTR_LENGTH 16
-#define NTLMv2_TYPE2_RESERVED_OFFSET 32
+#define NTLMv2_TYPE2_SERVER_CHALLENGE_LENGTH 8
 #define NTLMv2_TYPE2_SERVER_CHALLENGE_OFFSET 24
+#define NTLMv2_TYPE2_RESERVED_OFFSET 32
+#define NTLMv2_TYPE3_NTPROOFSTR_LENGTH 16
 #define NTLMv2_TYPE3_RESPONSE_LENGTH_OFFSET 20
 #define NTLMv2_TYPE3_RESPONSE_OFFSET_OFFSET 24
 
@@ -188,11 +188,11 @@ void PrintCapturedHash(char *ntlmType2, char* ntlmType3) {
 	memcpy(hostname, ntlmType3 + (*hostnameOffset), *hostnameLen);
 
 	// parsing captured hash
-	memcpy(serverChallenge, &ntlmType2[NTLMv2_TYPE2_SERVER_CHALLENGE_OFFSET], NTLMv2_SERVER_CHALLENGE_LENGTH);
+	memcpy(serverChallenge, &ntlmType2[NTLMv2_TYPE2_SERVER_CHALLENGE_OFFSET], NTLMv2_TYPE2_SERVER_CHALLENGE_LENGTH);
 	ntlmType3Length = (unsigned short*)(ntlmType3 + NTLMv2_TYPE3_RESPONSE_LENGTH_OFFSET);
 	ntlmType3Offset = (int*)(ntlmType3 + NTLMv2_TYPE3_RESPONSE_OFFSET_OFFSET);
-	memcpy(NTProofStr, &ntlmType3[*ntlmType3Offset], NTLMv2_NTPROOFSTR_LENGTH);
-	memcpy(NTLMResponse, &ntlmType3[(*ntlmType3Offset) + NTLMv2_NTPROOFSTR_LENGTH], *ntlmType3Length-NTLMv2_NTPROOFSTR_LENGTH);
+	memcpy(NTProofStr, &ntlmType3[*ntlmType3Offset], NTLMv2_TYPE3_NTPROOFSTR_LENGTH);
+	memcpy(NTLMResponse, &ntlmType3[(*ntlmType3Offset) + NTLMv2_TYPE3_NTPROOFSTR_LENGTH], *ntlmType3Length- NTLMv2_TYPE3_NTPROOFSTR_LENGTH);
 
 	if (wcslen(user) < 2) {
 		printf("[!] Couldn't capture the user credential hash :(\n");
@@ -207,16 +207,16 @@ void PrintCapturedHash(char *ntlmType2, char* ntlmType3) {
 	printf("NTLMv2 Client\t: %S\n", hostname);
 	printf("NTLMv2 Username\t: %S\\%S\n", domain, user);
 	printf("NTLMv2 Hash\t: %S::%S:", user, domain);
-	for (int i = 0; i < NTLMv2_SERVER_CHALLENGE_LENGTH; i++)
+	for (int i = 0; i < NTLMv2_TYPE2_SERVER_CHALLENGE_LENGTH; i++)
 		printf("%02x", serverChallenge[i]);
 	printf(":");
-	for (int i = 0; i < NTLMv2_NTPROOFSTR_LENGTH; i++)
+	for (int i = 0; i < NTLMv2_TYPE3_NTPROOFSTR_LENGTH; i++)
 		printf("%02x", NTProofStr[i]);
 	printf(":");
-	for (int i = 0; i < *ntlmType3Length - NTLMv2_NTPROOFSTR_LENGTH; i++)
+	for (int i = 0; i < *ntlmType3Length - NTLMv2_TYPE3_NTPROOFSTR_LENGTH; i++)
 		printf("%02x", NTLMResponse[i]);
 	printf("\n\n");
-	//hexDump2((char*)"\nserverChallenge\n", serverChallenge, NTLMv2_SERVER_CHALLENGE_LENGTH);
-	//hexDump2((char*)"\nNTProofStr\n", NTProofStr, NTLMv2_NTPROOFSTR_LENGTH);
-	//hexDump2((char*)"\nNTLMResponse\n", NTLMResponse, *ntlmType3Length - NTLMv2_NTPROOFSTR_LENGTH);
+	//hexDump2((char*)"\nserverChallenge\n", serverChallenge, NTLMv2_TYPE2_SERVER_CHALLENGE_LENGTH);
+	//hexDump2((char*)"\nNTProofStr\n", NTProofStr, NTLMv2_TYPE3_NTPROOFSTR_LENGTH);
+	//hexDump2((char*)"\nNTLMResponse\n", NTLMResponse, *ntlmType3Length - NTLMv2_TYPE3_NTPROOFSTR_LENGTH);
 }
