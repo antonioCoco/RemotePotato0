@@ -155,16 +155,20 @@
   <ItemGroup>
     <ClCompile Include="HTTPCrossProtocolRelay.cpp" />
     <ClCompile Include="IStorageTrigger.cpp" />
+    <ClCompile Include="RelayLib.cpp" />
     <ClCompile Include="RemotePotato0.cpp" />
     <ClCompile Include="RogueOxidResolver.cpp" />
     <ClCompile Include="RogueOxidResolver_s.c" />
+    <ClCompile Include="RPCCaptureServer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="HTTPCrossProtocolRelay.h" />
     <ClInclude Include="IStandardActivator_h.h" />
     <ClInclude Include="IStorageTrigger.h" />
+    <ClInclude Include="RelayLib.h" />
     <ClInclude Include="RogueOxidResolver.h" />
     <ClInclude Include="RogueOxidResolver_h.h" />
+    <ClInclude Include="RPCCaptureServer.h" />
   </ItemGroup>
   <ItemGroup>
     <Midl Include="IStandardActivator.idl" />
