@@ -1,4 +1,7 @@
 # RemotePotato0
+
+**UPDATE 21-10-2022: The main exploit scenario RPC->LDAP of RemotePotato0 has been fixed. More details at -->** https://twitter.com/splinter_code/status/1583555613950255104  
+
 Just another "Won't Fix" Windows Privilege Escalation from User to Domain Admin.
 
 RemotePotato0 is an exploit that allows you to escalate your privileges from a generic User to Domain Admin. 
